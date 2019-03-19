@@ -17,9 +17,9 @@ const char* ssid = "ROSID";
 const char* password = "ROSI29ROSI!";
 const char* loghost = "www.web675.server21.eu";
 const char* path = "/loginfo.php/?info=";
-static int pauseTimeMin = 20;
-static int wateringTimeSec = 10;
-static int moistureMinLevel = 500;
+static int pauseTimeMin = 30;
+static int wateringTimeSec[8] = { 5, 5, 5, 5, 5, 5, 5, 5 };
+static int moistureMinLevel[8] = { 100, 100, 100, 100, 100, 100, 100, 100 };
 static unsigned long interval = 60L * 1000 * pauseTimeMin;
 static unsigned long previousMillis = interval;
 
@@ -76,6 +76,7 @@ void writeFile(fs::FS &fs, const char * path, const char * message) {
 
 int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultValue) {
 	String content = readFile(SPIFFS, path);
+	Serial.println("content: " + String(content));
 
 	int index = content.indexOf(";");
 	while (index > 0) {
@@ -99,13 +100,15 @@ String getServerPage() {
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
 			"<form method='POST' action='/settings'>" +
-			"Pause time in minutes:<br>" +
-			"<input type='text' name='pausetime' value='" + String(pauseTimeMin) + "'><br>" +
-			"Watering time in seconds:<br>" +
-			"<input type='text' name='wateringtime' value='" + String(wateringTimeSec) + "'><br>" +
-			"Minimum moisture level 0-1000:<br>" +
-			"<input type='text' name='moistureminlevel' value='" + String(moistureMinLevel) + "'><br>" +
-			"<input type='submit' value='Save Settings'>" +
+			"Pause time in minutes: " +
+			"<input type='text' name='pausetime' value='" + String(pauseTimeMin) + "'><br><br>" +
+			"Watering time in seconds | Minimum moisture level 0-1000<br>";
+	for (int plant = 0; plant < 8; plant++) {
+		String ps = String(plant + 1);
+		serverpage += String("P") + ps + " <input type='text' name='wateringtime" + ps + "' value='" + String(wateringTimeSec[plant]) + "'>"
+				+ "<input type='text' name='moistureminlevel" + ps + "' value='" + String(moistureMinLevel[plant]) + "'><br>";
+	}
+	serverpage += String("<br><input type='submit' value='Save Settings'>") +
 			"</form><br>" +
 			"<a target='_blank' href='http://" + String(loghost) + "/plantinfo.php'>Plantinfo</a>";
 	return serverpage;
@@ -118,27 +121,27 @@ void startUpdateServer() {
 	WiFi.begin(ssid, password);
 	if (WiFi.waitForConnectResult() == WL_CONNECTED) {
 		MDNS.begin(updatehost);
-		server.on("/", HTTP_GET, []() {
+		server.on("/settings", HTTP_GET, []() {
 			server.sendHeader("Connection", "close");
 			String page = getServerPage();
 			server.send(200, "text/html", page);
 		});
 		server.on("/settings", HTTP_POST,
 				[]() {
-					String pausetime = server.arg("pausetime");
-					String wateringtime = server.arg("wateringtime");
-					String moistureminlevel = server.arg("moistureminlevel");
-
-					writeFile(SPIFFS, "/settings.txt",
-							(String("pausetime=")+pausetime+";wateringtime="+wateringtime+";moistureminlevel="+moistureminlevel+";").c_str());
+					String settings = String("pausetime=")+server.arg("pausetime")+";";
+					for (int plant = 0; plant < 8; plant++) {
+						String p = String(plant+1);
+						settings += String("wateringtime"+p+"=")+server.arg("wateringtime"+p)+
+						";moistureminlevel"+p+"="+server.arg("moistureminlevel"+p)+";";
+					}
+					writeFile(SPIFFS, "/settings.txt", settings.c_str());
 
 					pauseTimeMin = getParam(SPIFFS, "/settings.txt", "pausetime", pauseTimeMin);
-					wateringTimeSec = getParam(SPIFFS, "/settings.txt", "wateringtime", wateringTimeSec);
-					moistureMinLevel = getParam(SPIFFS, "/settings.txt", "moistureminlevel", moistureMinLevel);
+					for (int plant = 0; plant < 8; plant++) {
+						wateringTimeSec[plant] = getParam(SPIFFS, "/settings.txt", (String("wateringtime")+String(plant+1)).c_str(), wateringTimeSec[plant]);
+						moistureMinLevel[plant] = getParam(SPIFFS, "/settings.txt", (String("moistureminlevel")+String(plant+1)).c_str(), moistureMinLevel[plant]);
+					}
 					interval = 60L * 1000 * pauseTimeMin;
-					Serial.println("pauseTimeMin: " + String(pauseTimeMin));
-					Serial.println("wateringTimeSec: " + String(wateringTimeSec));
-					Serial.println("moistureMinLevel: " + String(moistureMinLevel));
 
 					server.sendHeader("Connection", "close");
 					String page = getServerPage();
@@ -228,11 +231,16 @@ void setup() {
 		return;
 	}
 
+	// Read settings
 	pauseTimeMin = getParam(SPIFFS, "/settings.txt", "pausetime", pauseTimeMin);
-	Serial.println("pauseTimeMin: " + String(pauseTimeMin));
-	wateringTimeSec = getParam(SPIFFS, "/settings.txt", "wateringtime", wateringTimeSec);
-	Serial.println("wateringTimeSec: " + String(wateringTimeSec));
-
+	for (int plant = 0; plant < 8; plant++) {
+		wateringTimeSec[plant] = getParam(SPIFFS, "/settings.txt",
+				(String("wateringtime") + String(plant + 1)).c_str(),
+				wateringTimeSec[plant]);
+		moistureMinLevel[plant] = getParam(SPIFFS, "/settings.txt",
+				(String("moistureminlevel") + String(plant + 1)).c_str(),
+				moistureMinLevel[plant]);
+	}
 	interval = 60L * 1000 * pauseTimeMin;
 	previousMillis = interval;
 }
@@ -323,12 +331,6 @@ void SendValues(String values) {
 		}
 	}
 
-//	// Read all the lines of the reply from server and print them to Serial
-//	while (client.available()) {
-//		String line = client.readStringUntil('\r');
-//		Serial.print(line);
-//	}
-
 	Serial.println();
 	Serial.println("closing send connection. Send Values done.");
 }
@@ -344,10 +346,10 @@ void loop() {
 		String values = String("");
 		for (int plantId = 0; plantId < 8; plantId++) {
 			int feuchte = getFeuchte(plantId);
-			if (feuchte < moistureMinLevel) {
-				waessern(plantId, wateringTimeSec * 1000);
+			if (feuchte < moistureMinLevel[plantId]) {
+				waessern(plantId, wateringTimeSec[plantId] * 1000);
 			}
-			values += String(feuchte * (feuchte < moistureMinLevel ? -1 : 1)) + ",";
+			values += String(feuchte * (feuchte < moistureMinLevel[plantId] ? -1 : 1)) + ",";
 		}
 
 		int wasserstand = getWasserstand();
@@ -360,7 +362,7 @@ void loop() {
 	if (currentMillis - previousLedMillis >= ledInterval) {
 		digitalWrite(ledBuiltIn, HIGH);
 	}
-	if (currentMillis - previousLedMillis >= ledInterval + 100) {
+	if (currentMillis - previousLedMillis >= ledInterval + 30) {
 		digitalWrite(ledBuiltIn, LOW);
 		previousLedMillis = currentMillis;
 	}
