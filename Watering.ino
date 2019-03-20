@@ -95,7 +95,7 @@ int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultV
 }
 
 String getServerPage() {
-	String serverpage = String("v7<br>") +
+	String serverpage = String("v8<br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
@@ -298,7 +298,7 @@ void waessern(int plantId, int time) {
 
 int getWasserstand() {
 	int wasserstand = analogRead(wasserstandPin);
-	wasserstand = map(wasserstand, 1300, 2290, 80, 0);
+	wasserstand = map(wasserstand, 1000, 1800, 80, 0);//wasserstand/100;
 	Serial.printf("Wasserstand: %d \n", wasserstand); //print Low 4bytes.
 	digitalWrite(ledRed, wasserstand < 10 ? HIGH : LOW);
 	return wasserstand;
