@@ -95,7 +95,7 @@ int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultV
 }
 
 String getServerPage() {
-	String serverpage = String("v8<br>") +
+	String serverpage = String("v9<br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
@@ -343,6 +343,8 @@ void loop() {
 	if (currentMillis - previousMillis >= interval) {
 		previousMillis = currentMillis;
 
+		int wasserstand = getWasserstand();
+
 		String values = String("");
 		for (int plantId = 0; plantId < 8; plantId++) {
 			int feuchte = getFeuchte(plantId);
@@ -352,7 +354,6 @@ void loop() {
 			values += String(feuchte * (feuchte < moistureMinLevel[plantId] ? -1 : 1)) + ",";
 		}
 
-		int wasserstand = getWasserstand();
 		values += String(wasserstand);
 
 		Serial.println(String("Now sending values: ") + values);
