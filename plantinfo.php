@@ -43,6 +43,25 @@
 	?>
     </script>
     <script type="text/javascript" src="chart.min.js"></script>
+    <script type="text/javascript" src="jquery.min.js"></script>
+	<script>
+	$(function(){
+		setTimeout(function(){ 
+			$(".canvasjs-chart-credit").remove(); 
+			var canv = $(".canvasjs-chart-canvas");
+			for (i = 0; i < 18; i++) {
+				clean(canv,i);
+			}
+		}, 100);
+	});
+	
+	function clean(canv, id){
+		var cont = canv[id].getContext("2d");
+		cont.fillStyle = "white";
+		cont.fillRect(0, 136, 60, 10);
+	}
+	</script>
+
 </head>
 <body>
 	<?php 
