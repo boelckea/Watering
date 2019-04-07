@@ -95,7 +95,7 @@ int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultV
 }
 
 String getServerPage() {
-	String serverpage = String("v9<br>") +
+	String serverpage = String("Version 10<br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
@@ -336,7 +336,8 @@ void SendValues(String values) {
 }
 
 unsigned long previousLedMillis = millis();
-unsigned long ledInterval = 5000;
+unsigned long ledInterval = 10000;
+unsigned long lastDuration = 0;
 
 void loop() {
 	unsigned long currentMillis = millis();
@@ -354,10 +355,11 @@ void loop() {
 			values += String(feuchte * (feuchte < moistureMinLevel[plantId] ? -1 : 1)) + ",";
 		}
 
-		values += String(wasserstand);
+		values += String(wasserstand) + "," + String(currentMillis) + "," + String(lastDuration);
 
 		Serial.println(String("Now sending values: ") + values);
 		SendValues(values);
+		lastDuration = millis() - currentMillis;
 	}
 
 	if (currentMillis - previousLedMillis >= ledInterval) {
