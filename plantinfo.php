@@ -67,6 +67,7 @@
 	<?php 
 		echo "Version: 13 linecount: " . $linecount;
 	?>
+	<a href="info.php">Log</a> | 
 	<a href="?count=<?php echo $count / 10 ?>">[count / 10]</a> -
 	<a href="?count=<?php echo $count / 2 ?>">[count / 2]</a> -
 	<a href="?count=<?php echo $count - 1 ?>">[count - 1]</a> -
