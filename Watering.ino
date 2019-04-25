@@ -1,6 +1,6 @@
 /*
  "C:\Program Files\Git\mingw64\bin\curl.exe" -F image=@C:\Data\sloeber-workspace\Esp32Watering\Release\Esp32Watering.bin esp32watering/update
- "C:\Program Files\Git\mingw64\bin\curl.exe" -F image=@C:\Data\sloeber-workspace\Esp32Watering\Release\Esp32Watering.bin 192.168.11.44/update
+ "C:\Program Files\Git\mingw64\bin\curl.exe" -F image=@C:\Data\sloeber-workspace\Esp32Watering\Release\Esp32Watering.bin 192.168.11.47/update
  http://esp32watering/
  */
 
@@ -95,7 +95,7 @@ int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultV
 }
 
 String getServerPage() {
-	String serverpage = String("Version 13<br>") +
+	String serverpage = String("Version 14<br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
@@ -298,8 +298,9 @@ void waessern(int plantId, int time) {
 
 int getWasserstand() {
 	int wasserstand = analogRead(wasserstandPin);
-	wasserstand = map(wasserstand, 1200, 2100, 800, 0);
-	wasserstand = max(wasserstand, 0); //wasserstand/100
+	wasserstand = map(wasserstand, 2700, 3200, 800, 0);
+	wasserstand = max(wasserstand, 0);
+	//wasserstand = wasserstand/10;
 	Serial.printf("Wasserstand: %d \n", wasserstand); //print Low 4bytes.
 	digitalWrite(ledRed, wasserstand < 100 ? HIGH : LOW);
 	return wasserstand;
