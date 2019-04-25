@@ -1,6 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
+	<link rel="shortcut icon" href="/favicon.ico" />
     <script type="text/javascript">
 	<?php
 		function IsNullOrEmptyString($str){
@@ -65,7 +66,7 @@
 </head>
 <body>
 	<?php 
-		echo "Version: 13 linecount: " . $linecount;
+		echo "Version: 14 linecount: " . $linecount;
 	?>
 	<a href="info.php">Log</a> | 
 	<a href="?count=<?php echo $count / 10 ?>">[count / 10]</a> -
