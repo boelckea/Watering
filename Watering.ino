@@ -28,6 +28,15 @@ WebServer server(80);
 
 #define FORMAT_SPIFFS_IF_FAILED true
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+uint8_t temprature_sens_read();
+#ifdef __cplusplus
+}
+#endif
+uint8_t temprature_sens_read();
+
 int ledBuiltIn = GPIO_NUM_2;
 int ledRed = GPIO_NUM_14;
 int ledGreen = GPIO_NUM_26;
@@ -95,7 +104,7 @@ int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultV
 }
 
 String getServerPage() {
-	String serverpage = String("Version 14<br>") +
+	String serverpage = String("Version 15<br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
@@ -357,7 +366,12 @@ void loop() {
 			values += String(feuchte * (feuchte < moistureMinLevel[plantId] ? -1 : 1)) + ",";
 		}
 
-		values += String(wasserstand) + "," + String(currentMillis) + "," + String(lastDuration);
+		uint8_t tempertaure = (temprature_sens_read() - 32) / 1.8;
+
+		values += String(wasserstand)
+				+ "," + String(currentMillis)
+				+ "," + String(lastDuration)
+				+ "," + String(tempertaure);
 
 		Serial.println(String("Now sending values: ") + values);
 		SendValues(values);
