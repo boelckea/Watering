@@ -1,6 +1,6 @@
 /*
- "C:\Program Files\Git\mingw64\bin\curl.exe" -F image=@C:\Data\sloeber-workspace\Esp32Watering\Release\Esp32Watering.bin esp32watering/update
- "C:\Program Files\Git\mingw64\bin\curl.exe" -F image=@C:\Data\sloeber-workspace\Esp32Watering\Release\Esp32Watering.bin 192.168.11.47/update
+ "C:\Program Files\Git\mingw64\bin\curl.exe" -F image=@C:\Data\sloeber-workspace\Esp32Watering\Release\Esp32Logging.bin espLogging/update
+ "C:\Program Files\Git\mingw64\bin\curl.exe" -F image=@C:\Data\sloeber-workspace\Esp32Watering\Release\Esp32Logging.bin 192.168.11.47/update
  http://esp32watering/
  */
 
@@ -10,15 +10,12 @@
 #include <ESPmDNS.h>
 #include <Update.h>
 
-#include "FS.h"
-#include "SPIFFS.h"
-
 const char* ssid = "ROSID";
 const char* password = "ROSI29ROSI!";
 const char* loghost = "www.web675.server21.eu";
 const char* path = "/espwrite.php/?info=";
 
-const char* updatehost = "esp32watering";
+const char* updatehost = "EspLogging";
 WebServer server(80);
 
 #define FORMAT_SPIFFS_IF_FAILED true
