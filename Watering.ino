@@ -273,7 +273,7 @@ int getFeuchte(int plantId) {
 	int feuchte = analogRead(feuchteReadPin);
 	feuchte = map(feuchte, 1500, 3200, 0, 1000);
 	uint8_t temperature = (temprature_sens_read() - 32) / 1.8;
-	feuchte = feuchte + 156 - temperature * 2,9;
+	//feuchte = feuchte + (54 - temperature) * 3;
 	Serial.printf("Feuchte Pflanze %d: %d \n", pflanze, feuchte); //print Low 4bytes.
 
 	return feuchte;
