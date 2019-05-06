@@ -1,6 +1,6 @@
 /*
  "C:\Program Files\Git\mingw64\bin\curl.exe" -F image=@C:\Data\sloeber-workspace\Esp32Watering\Release\Esp32Logging.bin espLogging/update
- "C:\Program Files\Git\mingw64\bin\curl.exe" -F image=@C:\Data\sloeber-workspace\Esp32Watering\Release\Esp32Logging.bin 192.168.11.47/update
+ "C:\Program Files\Git\mingw64\bin\curl.exe" -F image=@C:\Data\sloeber-workspace\Esp32Watering\Release\Esp32Logging.bin 192.168.11.49/update
  http://esp32watering/
  */
 
@@ -18,17 +18,15 @@ const char* path = "/espwrite.php/?info=";
 const char* updatehost = "EspLogging";
 WebServer server(80);
 
-#define FORMAT_SPIFFS_IF_FAILED true
-
 int ledBuiltIn = GPIO_NUM_2;
 int donePin = GPIO_NUM_32;
-int wasserstandPin = A3;
+int meassurePin = A3;
 
 String getServerPage() {
 	String serverpage = String("Version 16<br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
-			"</form>
+			"</form><br/>" +
 			"<a target='_blank' href='http://" + String(loghost) + "/espreport.php'>Esp Report</a>";
 	return serverpage;
 }
@@ -81,46 +79,6 @@ void startUpdateServer() {
 	}
 }
 
-void setup() {
-	pinMode(feuchtePulse, INPUT);
-	pinMode(ledBuiltIn, OUTPUT);
-	pinMode(donePin, OUTPUT);
-
-  digitalWrite(donePin, LOW);
-
-	Serial.begin(115200);
-	delay(10);
-
-	startUpdateServer();
-
-	// Wifi connect
-	Serial.print("Connecting to ");
-	Serial.println(ssid);
-
-	WiFi.begin(ssid, password);
-
-	while (WiFi.status() != WL_CONNECTED) {
-		delay(500);
-		Serial.print(".");
-	}
-
-	Serial.println("");
-	Serial.println("WiFi connected");
-	Serial.println("IP address: ");
-	Serial.println(WiFi.localIP());
-
-	if (!SPIFFS.begin(FORMAT_SPIFFS_IF_FAILED)) {
-		Serial.println("SPIFFS Mount Failed");
-		return;
-	}
-
-	// Read and send values
-  int log1 = analogRead(donePin);
-  SendValues(String(log1));
-  delay(100);
-  digitalWrite(donePin, HIGH);
-}
-
 void SendValues(String values) {
 	// Use WiFiClient class to create TCP connections
 	WiFiClient client;
@@ -151,6 +109,45 @@ void SendValues(String values) {
 	Serial.println();
 	Serial.println("closing send connection. Send Values done.");
 }
+
+void setup() {
+	pinMode(meassurePin, INPUT);
+	pinMode(ledBuiltIn, OUTPUT);
+	pinMode(donePin, OUTPUT);
+
+	digitalWrite(ledBuiltIn, LOW);
+	digitalWrite(donePin, LOW);
+
+	Serial.begin(115200);
+	delay(10);
+
+	startUpdateServer();
+
+	// Wifi connect
+	Serial.print("Connecting to ");
+	Serial.println(ssid);
+
+	WiFi.begin(ssid, password);
+
+	while (WiFi.status() != WL_CONNECTED) {
+		delay(500);
+		Serial.print(".");
+	}
+
+	Serial.println("");
+	Serial.println("WiFi connected");
+	Serial.println("IP address: ");
+	Serial.println(WiFi.localIP());
+
+	// Read and send values
+	int log1 = analogRead(donePin);
+	log1 = map(log1, 0, 4096, 0, 1000);
+	SendValues(String(log1));
+	digitalWrite(ledBuiltIn, HIGH);
+	delay(100);
+	digitalWrite(donePin, HIGH);
+}
+
 
 void loop() {
 	server.handleClient();
