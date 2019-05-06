@@ -23,7 +23,7 @@ int donePin = GPIO_NUM_32;
 int meassurePin = A3;
 
 String getServerPage() {
-	String serverpage = String("Version 16<br>") +
+	String serverpage = String("Version 2<br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br/>" +
@@ -140,7 +140,7 @@ void setup() {
 	Serial.println(WiFi.localIP());
 
 	// Read and send values
-	int log1 = analogRead(donePin);
+	int log1 = analogRead(meassurePin);
 	log1 = map(log1, 0, 4096, 0, 1000);
 	SendValues(String(log1));
 	digitalWrite(ledBuiltIn, HIGH);
