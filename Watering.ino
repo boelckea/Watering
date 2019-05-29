@@ -104,7 +104,7 @@ int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultV
 }
 
 String getServerPage() {
-	String serverpage = String("Version 16<br>") +
+	String serverpage = String("Version 15<br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
@@ -272,8 +272,6 @@ int getFeuchte(int plantId) {
 	int pflanze = plantId + 1;
 	int feuchte = analogRead(feuchteReadPin);
 	feuchte = map(feuchte, 1500, 3200, 0, 1000);
-	uint8_t temperature = (temprature_sens_read() - 32) / 1.8;
-	//feuchte = feuchte + (54 - temperature) * 3;
 	Serial.printf("Feuchte Pflanze %d: %d \n", pflanze, feuchte); //print Low 4bytes.
 
 	return feuchte;
@@ -318,6 +316,18 @@ int getWasserstand() {
 }
 
 void SendValues(String values) {
+	// Check Wifi connection
+	int wifi_retry = 0;
+	while (WiFi.status() != WL_CONNECTED && wifi_retry < 10) {
+		wifi_retry++;
+		Serial.println("WiFi not connected. Try to reconnect");
+		WiFi.disconnect();
+		WiFi.mode(WIFI_OFF);
+		WiFi.mode(WIFI_STA);
+		WiFi.begin(ssid, password);
+		delay(500);
+	}
+
 	// Use WiFiClient class to create TCP connections
 	WiFiClient client;
 	const int httpPort = 80;
