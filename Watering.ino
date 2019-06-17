@@ -104,7 +104,7 @@ int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultV
 }
 
 String getServerPage() {
-	String serverpage = String("Version 15<br>") +
+	String serverpage = String("Version 16<br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
@@ -317,7 +317,7 @@ int getWasserstand() {
 
 void SendValues(String values) {
 	// Check Wifi connection
-	while (WiFi.status() != WL_CONNECTED) {
+	if (WiFi.status() != WL_CONNECTED) {
 		Serial.println("WiFi not connected. Restarting");
 		delay(60000); // To slow reboot loop down
 		ESP.restart();
