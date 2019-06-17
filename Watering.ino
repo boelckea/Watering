@@ -317,15 +317,10 @@ int getWasserstand() {
 
 void SendValues(String values) {
 	// Check Wifi connection
-	int wifi_retry = 0;
-	while (WiFi.status() != WL_CONNECTED && wifi_retry < 10) {
-		wifi_retry++;
-		Serial.println("WiFi not connected. Try to reconnect");
-		WiFi.disconnect();
-		WiFi.mode(WIFI_OFF);
-		WiFi.mode(WIFI_STA);
-		WiFi.begin(ssid, password);
-		delay(500);
+	while (WiFi.status() != WL_CONNECTED) {
+		Serial.println("WiFi not connected. Restarting");
+		delay(60000); // To slow reboot loop down
+		ESP.restart();
 	}
 
 	// Use WiFiClient class to create TCP connections
