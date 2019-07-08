@@ -22,6 +22,9 @@
 			$linecount += substr_count(fread($file, 8192), "\n");
 		}
 
+		$settings = fopen("settings.txt", "r") or die("Unable to open file!");
+		$lables = preg_split("/,/",fgets($settings));
+
 		for ($plantId = 1; $plantId <= 9; $plantId++) {
 			rewind($file);
 			$linenumber = 0;
@@ -82,7 +85,7 @@
 		echo "<script>";
 			echo "window.onload = function() {";
 				for ($plantId = 1; $plantId <= 9; $plantId++) {
-					echo "var chart".$plantId." = new CanvasJS.Chart('chart".$plantId."',{axisX: {valueFormatString: 'MMM D HH:mm'}, axisY: {title: '" . ($plantId == 9 ? "Tank" : "P" . $plantId) . "', maximum: " . ($plantId == 9 ? "800" : "1000") . "}, dataPointMinWidth: ".max(500/$count,1).", data: [{ xValueFormatString: 'YYYY.MM.DD HH:mm:ss', type: '" . ($plantId == 9 ? "area" : "column") . "',dataPoints: data".$plantId."}]});";
+					echo "var chart".$plantId." = new CanvasJS.Chart('chart".$plantId."',{axisX: {valueFormatString: 'MMM D HH:mm'}, axisY: {title: '" . ($plantId == 9 ? "Tank" : $lables[$plantId - 1]) . "', maximum: " . ($plantId == 9 ? "800" : "1000") . "}, dataPointMinWidth: ".max(500/$count,1).", data: [{ xValueFormatString: 'YYYY.MM.DD HH:mm:ss', type: '" . ($plantId == 9 ? "area" : "column") . "',dataPoints: data".$plantId."}]});";
 					echo "chart".$plantId.".render();";
 				}
 			echo "}";
