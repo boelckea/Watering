@@ -69,7 +69,7 @@
 </head>
 <body>
 	<?php 
-		echo "{DATE:2019-07-25 16:55} linecount: " . $linecount;
+		echo "Date <span id='commitdate'></span>  linecount: " . $linecount;
 	?>
 	<a href="info.php">Log</a>| 
 	<a href="settings.php">Settings</a>| 
