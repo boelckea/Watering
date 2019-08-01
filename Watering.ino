@@ -375,10 +375,13 @@ void loop() {
 
 		uint8_t tempertaure = (temprature_sens_read() - 32) / 1.8;
 
+long rssi = WiFi.RSSI();
 		values += String(wasserstand)
 				+ "," + String(currentMillis)
 				+ "," + String(lastDuration)
-				+ "," + String(tempertaure);
+				+ "," + String(tempertaure)
++ "," + String(rssi);
+
 
 		Serial.println(String("Now sending values: ") + values);
 		SendValues(values);
