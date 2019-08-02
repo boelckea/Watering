@@ -104,7 +104,7 @@ int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultV
 }
 
 String getServerPage() {
-	String serverpage = String("Date <span id='commitdate'>2019-08-02 22:23</span> <br>") +
+	String serverpage = String("VersionDate: <span id='commitdate'>2019-08-02 22:37</span> <br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
@@ -380,7 +380,7 @@ void loop() {
 				+ "," + String(currentMillis)
 				+ "," + String(lastDuration)
 				+ "," + String(tempertaure)
-		+ "," + String(rssi);
+				+ "," + String(rssi);
 
 
 		Serial.println(String("Now sending values: ") + values);
