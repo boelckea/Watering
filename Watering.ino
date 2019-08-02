@@ -104,7 +104,7 @@ int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultV
 }
 
 String getServerPage() {
-	String serverpage = String("Date <span id='commitdate'></span> <br>") +
+	String serverpage = String("Date <span id='commitdate'>2019-08-02 22:23</span> <br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
@@ -319,7 +319,7 @@ void SendValues(String values) {
 	// Check Wifi connection
 	if (WiFi.status() != WL_CONNECTED) {
 		Serial.println("WiFi not connected. Restarting");
-		delay(60000); // To slow reboot loop down
+		delay(1800000); // To slow reboot loop down to 30 min
 		ESP.restart();
 	}
 
@@ -342,7 +342,7 @@ void SendValues(String values) {
 			"Connection: close\r\n\r\n");
 	unsigned long timeout = millis();
 	while (client.available() == 0) {
-		if (millis() - timeout > 5000) {
+		if (millis() - timeout > 15000) {
 			Serial.println(">>> Client Timeout !");
 			client.stop();
 			return;
@@ -375,12 +375,12 @@ void loop() {
 
 		uint8_t tempertaure = (temprature_sens_read() - 32) / 1.8;
 
-long rssi = WiFi.RSSI();
+		long rssi = WiFi.RSSI();
 		values += String(wasserstand)
 				+ "," + String(currentMillis)
 				+ "," + String(lastDuration)
 				+ "," + String(tempertaure)
-+ "," + String(rssi);
+		+ "," + String(rssi);
 
 
 		Serial.println(String("Now sending values: ") + values);
