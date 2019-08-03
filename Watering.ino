@@ -104,7 +104,7 @@ int getParam(fs::FS &fs, const char * path, const char * pnameFind, int defaultV
 }
 
 String getServerPage() {
-	String serverpage = String("VersionDate: <span id='commitdate'>2019-08-02 22:37</span> <br>") +
+	String serverpage = String("VersionDate: <span id='commitdate'>2019-08-03 09:37</span> <br>") +
 			"<form id='f1' method='POST' action='/update' enctype='multipart/form-data'>" +
 			"<input type='file' name='update'><input type='submit' value='Update'>" +
 			"</form><br>" +
@@ -395,6 +395,12 @@ void loop() {
 		digitalWrite(ledBuiltIn, LOW);
 		previousLedMillis = currentMillis;
 	}
+
+	if (currentMillis >= 261000000) {
+		// Restart after 3 days and half hour to solve connection problems
+		ESP.restart();
+	}
+
 
 	server.handleClient();
 	delay(10);
