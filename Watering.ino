@@ -53,6 +53,8 @@ int dataPin = GPIO_NUM_23;
 int latchPin = GPIO_NUM_16;
 int clockPin = GPIO_NUM_18;
 
+bool myWiFiFirstConnect = true;
+
 int wasserstandPin = A3;
 
 String readFile(fs::FS &fs, const char * path) {
@@ -123,80 +125,121 @@ String getServerPage() {
 	return serverpage;
 }
 
-void startUpdateServer() {
-	Serial.println();
-	Serial.println("Booting Sketch...");
-	WiFi.mode(WIFI_AP_STA);
-	WiFi.begin(ssid, password);
-	if (WiFi.waitForConnectResult() == WL_CONNECTED) {
-		MDNS.begin(updatehost);
-		server.on("/settings", HTTP_GET, []() {
-			server.sendHeader("Connection", "close");
-			String page = getServerPage();
-			server.send(200, "text/html", page);
-		});
-		server.on("/settings", HTTP_POST,
-				[]() {
-					String settings = String("pausetime=")+server.arg("pausetime")+";";
-					for (int plant = 0; plant < 8; plant++) {
-						String p = String(plant+1);
-						settings += String("wateringtime"+p+"=")+server.arg("wateringtime"+p)+
-						";moistureminlevel"+p+"="+server.arg("moistureminlevel"+p)+";";
-					}
-					writeFile(SPIFFS, "/settings.txt", settings.c_str());
+void registerServices() {
+	MDNS.begin(updatehost);
+	server.on("/settings", HTTP_GET, []() {
+		server.sendHeader("Connection", "close");
+		String page = getServerPage();
+		server.send(200, "text/html", page);
+	});
+	server.on("/settings", HTTP_POST,
+			[]() {
+				String settings = String("pausetime=")+server.arg("pausetime")+";";
+				for (int plant = 0; plant < 8; plant++) {
+					String p = String(plant+1);
+					settings += String("wateringtime"+p+"=")+server.arg("wateringtime"+p)+
+					";moistureminlevel"+p+"="+server.arg("moistureminlevel"+p)+";";
+				}
+				writeFile(SPIFFS, "/settings.txt", settings.c_str());
 
-					pauseTimeMin = getParam(SPIFFS, "/settings.txt", "pausetime", pauseTimeMin);
-					for (int plant = 0; plant < 8; plant++) {
-						wateringTimeSec[plant] = getParam(SPIFFS, "/settings.txt", (String("wateringtime")+String(plant+1)).c_str(), wateringTimeSec[plant]);
-						moistureMinLevel[plant] = getParam(SPIFFS, "/settings.txt", (String("moistureminlevel")+String(plant+1)).c_str(), moistureMinLevel[plant]);
-					}
-					interval = 60L * 1000 * pauseTimeMin;
+				pauseTimeMin = getParam(SPIFFS, "/settings.txt", "pausetime", pauseTimeMin);
+				for (int plant = 0; plant < 8; plant++) {
+					wateringTimeSec[plant] = getParam(SPIFFS, "/settings.txt", (String("wateringtime")+String(plant+1)).c_str(), wateringTimeSec[plant]);
+					moistureMinLevel[plant] = getParam(SPIFFS, "/settings.txt", (String("moistureminlevel")+String(plant+1)).c_str(), moistureMinLevel[plant]);
+				}
+				interval = 60L * 1000 * pauseTimeMin;
 
-					server.sendHeader("Connection", "close");
-					String page = getServerPage();
-					server.send(200, "text/html", page);
-				});
-		server.on("/update", HTTP_POST,
-				[]() {
-					server.sendHeader("Connection", "close");
-					server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
-					ESP.restart();
-				},
-				[]() {
-					HTTPUpload& upload = server.upload();
-					if (upload.status == UPLOAD_FILE_START) {
-						Serial.setDebugOutput(true);
-						Serial.printf("Update: %s\n", upload.filename.c_str());
-						if (!Update.begin()) { //start with max available size
-					Update.printError(Serial);
-				}
-			} else if (upload.status == UPLOAD_FILE_WRITE) {
-				if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-					Update.printError(Serial);
-				}
-			} else if (upload.status == UPLOAD_FILE_END) {
-				if (Update.end(true)) { //true to set the size to the current progress
-					Serial.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
-				} else {
-					Update.printError(Serial);
-				}
-				Serial.setDebugOutput(false);
+				server.sendHeader("Connection", "close");
+				String page = getServerPage();
+				server.send(200, "text/html", page);
+			});
+	server.on("/update", HTTP_POST,
+			[]() {
+				server.sendHeader("Connection", "close");
+				server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
+				ESP.restart();
+			},
+			[]() {
+				HTTPUpload& upload = server.upload();
+				if (upload.status == UPLOAD_FILE_START) {
+					Serial.setDebugOutput(true);
+					Serial.printf("Update: %s\n", upload.filename.c_str());
+					if (!Update.begin()) { //start with max available size
+				Update.printError(Serial);
 			}
-		});
-		server.begin();
-		MDNS.addService("http", "tcp", 80);
+		} else if (upload.status == UPLOAD_FILE_WRITE) {
+			if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+				Update.printError(Serial);
+			}
+		} else if (upload.status == UPLOAD_FILE_END) {
+			if (Update.end(true)) { //true to set the size to the current progress
+				Serial.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
+			} else {
+				Update.printError(Serial);
+			}
+			Serial.setDebugOutput(false);
+		}
+	});
+	server.begin();
+	MDNS.addService("http", "tcp", 80);
+}
 
-		Serial.printf("Ready! Open http://%s.local in your browser\n", updatehost);
-	} else {
-		Serial.println("WiFi Failed");
-	}
+void myWiFiTask(void *pvParameters) {
+	uint8_t state;
+
+  while (true) {
+    state = WiFi.waitForConnectResult();
+    if (state != WL_CONNECTED) {  // We have no connection
+      if (state == WL_NO_SHIELD) {  // WiFi.begin wasn't called yet
+        Serial.println("Connecting WiFi");
+
+        WiFi.mode(WIFI_AP);
+        WiFi.begin(ssid, password);
+
+      } else if (state == WL_CONNECT_FAILED) {  // WiFi.begin has failed (AUTH_FAIL)
+        Serial.println("Disconnecting WiFi");
+
+        WiFi.disconnect(true);
+
+      } else if (state == WL_DISCONNECTED) {  // WiFi.disconnect was done or Router.WiFi got out of range
+        if (!myWiFiFirstConnect) {  // Report only once
+          myWiFiFirstConnect = true;
+
+          Serial.println("WiFi disconnected");
+        }
+        Serial.println("No Connection -> Wifi Reset");
+        WiFi.persistent(false);
+        WiFi.disconnect();
+        WiFi.mode(WIFI_OFF);
+        WiFi.mode(WIFI_AP);
+        //	WiFi.config(ip, gateway, subnet); // Only for fix IP needed
+        WiFi.begin(ssid, password);
+        delay(3000);	// Wait 3 Seconds, WL_DISCONNECTED is present until new connect!
+
+        registerServices();
+      }
+
+      vTaskDelay (250); // Check again in about 250ms
+
+    } else { // We have connection
+      if (myWiFiFirstConnect) {  // Report only once
+        myWiFiFirstConnect = false;
+
+        Serial.print("Connected to ");
+        Serial.println(ssid);
+        Serial.print("IP address: ");
+        Serial.println(WiFi.localIP());
+        Serial.println("");
+      }
+
+      vTaskDelay (5000); // Check again in about 5s
+    }
+  }
 }
 
 void setup() {
 	Serial.begin(115200);
 	delay(10);
-
-	startUpdateServer();
 
 	pinMode(feuchtePulse, INPUT);
 	pinMode(pulseMultiplex1, OUTPUT);
@@ -223,17 +266,8 @@ void setup() {
 	Serial.print("Connecting to ");
 	Serial.println(ssid);
 
-	WiFi.begin(ssid, password);
-
-	while (WiFi.status() != WL_CONNECTED) {
-		delay(500);
-		Serial.print(".");
-	}
-
-	Serial.println("");
-	Serial.println("WiFi connected");
-	Serial.println("IP address: ");
-	Serial.println(WiFi.localIP());
+	// Create a connection task with 8kB stack on core 0
+	xTaskCreatePinnedToCore(myWiFiTask, "myWiFiTask", 8192, NULL, 3, NULL, 0);
 
 	if (!SPIFFS.begin(FORMAT_SPIFFS_IF_FAILED)) {
 		Serial.println("SPIFFS Mount Failed");
@@ -316,13 +350,6 @@ int getWasserstand() {
 }
 
 void SendValues(String values) {
-	// Check Wifi connection
-	if (WiFi.status() != WL_CONNECTED) {
-		Serial.println("WiFi not connected. Restarting");
-		delay(1800000); // To slow reboot loop down to 30 min
-		ESP.restart();
-	}
-
 	// Use WiFiClient class to create TCP connections
 	WiFiClient client;
 	const int httpPort = 80;
